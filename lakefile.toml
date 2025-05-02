@@ -5,6 +5,6 @@ defaultTargets = ["lean-cmath"]
 [[lean_lib]]
 name = "LeanCmath"
 
-[[lean_exe]]
-name = "lean-cmath"
-root = "Main"
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
