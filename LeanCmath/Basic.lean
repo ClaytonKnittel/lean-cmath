@@ -1,46 +1,51 @@
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Data.Nat.Prime.Defs
+import Mathlib.Tactic.Linarith
 
-/--
-Proof that `n!` is divisible by all nonzero integers `m ≤ n`.
--/
-theorem all_n_divide_fact_n : ∀ {n m : ℕ}, m ≠ 0 ∧ m ≤ n → m ∣ Nat.factorial n := by
-  intro n m ⟨m_ne_zero, m_le_n⟩
-  match n with
-  | .zero => exact (False.elim ∘ m_ne_zero ∘ Nat.le_zero.mp) m_le_n
-  | .succ n_pred =>
-    cases m_le_n with
-    | refl =>
-      use Nat.factorial n_pred
-      rfl
-    | step m_le_n_pred =>
-      rw [Nat.factorial_succ]
-      apply Nat.dvd_mul_left_of_dvd
-      exact all_n_divide_fact_n (And.intro m_ne_zero m_le_n_pred)
-
-theorem all_n_divide_fact_n' : ∀ {n m : ℕ}, m ≠ 0 ∧ m ≤ n → m ∣ Nat.factorial n := by
-  exact And.elim (Nat.dvd_factorial ∘ Nat.zero_lt_of_ne_zero)
-
-theorem no_n_divides_fact_n_plus_1 : ∀ {n m : ℕ}, 2 ≤ m ∧ m ≤ n → ¬ m ∣ Nat.factorial n + 1 := by
-  intro n m h
-  match h with
-  | ⟨two_le_m, m_le_n⟩ =>
-    intro m_div_n_fact_plus_1
-    have zero_ne_m := Nat.ne_zero_of_lt two_le_m
-    let m_div_n_fact := all_n_divide_fact_n (And.intro zero_ne_m m_le_n)
-    have m_le_one : m ≤ 1 := by apply?
-    sorry
+open Nat
 
 theorem infinitude_of_primes : ∀ (n : ℕ), ∃ p ≥ n, Nat.Prime p := by
   intro n
-  let f := Nat.factorial n + 1
-  let p_greater_n := Nat.le_succ_of_le (Nat.self_le_factorial n)
 
-  have f_ge_2 : 2 ≤ f := by
-    let n_fact_pos := Nat.factorial_pos n
-    sorry
-  have f_min_fac_gt_n : Nat.minFac f > n := by
-    exact no_n_divides_fact_n_plus_1 (And.intro f_ge_2 sorry)
+  let m := factorial n + 1
+  let p := minFac m
 
-  use f
-  exact And.intro p_greater_n sorry
+  -- Show that p is prime by being the minimum factor of m, and by m > 1
+  have p_prime : Nat.Prime p := by
+    -- minFac's are prime so long as m ≠ 1
+    refine minFac_prime ?_
+    -- translate m ≠ 1 to 0 < n!
+    apply Ne.symm ∘ Nat.ne_of_lt ∘ Nat.lt_add_of_pos_left
+    exact factorial_pos n
+
+  -- p is the prime we are looking for, we just have to show it satisfies
+  -- the conditions of the proof
+  use p
+
+  -- we already have p is prime, refine the And and we will prove p ≥ n
+  refine And.intro ?_ p_prime
+
+  -- show by contradiction that p cannot be < n
+  by_contra! p_lt_n
+
+  -- p divides n! + 1 by construction, it is the min prime factor of it
+  have p_div_n_fact_plus_one : p ∣ factorial n + 1 := Nat.minFac_dvd m
+
+  -- p divides n! because, by assumption, p < n
+  have p_div_n_fact : p ∣ factorial n := by
+    -- all 0 < p ∧ p ≤ n divide n!
+    refine Nat.dvd_factorial ?_ (Nat.le_of_lt p_lt_n)
+    -- show that 0 < p by contradiction
+    by_contra! p_le_zero
+    -- if p == 0, then p_prime shows that 0 is prime
+    rw [eq_zero_of_le_zero p_le_zero] at p_prime
+    -- 0 isn't prime!
+    apply Nat.not_prime_zero p_prime
+
+  -- with p ∣ n! and p ∣ n! + 1, p must divide 1
+  have p_div_one : p ∣ 1 :=
+    (Nat.dvd_add_iff_right p_div_n_fact).mpr p_div_n_fact_plus_one
+
+  -- finally, we can show that p ≥ n since p is prime and divides one,
+  -- a contradiction
+  exact Nat.Prime.not_dvd_one p_prime p_div_one
