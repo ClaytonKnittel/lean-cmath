@@ -1,0 +1,10 @@
+name = "lean-cmath"
+version = "0.1.0"
+defaultTargets = ["lean-cmath"]
+
+[[lean_lib]]
+name = "LeanCmath"
+
+[[lean_exe]]
+name = "lean-cmath"
+root = "Main"
