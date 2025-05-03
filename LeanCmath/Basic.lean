@@ -28,10 +28,7 @@ theorem fib_formula : ∀ n, Nat.fib n = (φ ^ n - (-φ₂) ^ n) / Real.sqrt 5 :
       field_simp [fib_formula Nat.zero]
       linarith
     | succ n =>
-      rw [Nat.fib_add_two]
-      rw [Nat.cast_add]
-      rw [fib_formula n]
-      rw [fib_formula (n + 1)]
+      field_simp [Nat.fib_add_two, fib_formula n, fib_formula (n + 1)]
       rw [neg_eq_neg_one_mul φ₂]
       repeat rw [mul_pow]
       field_simp [pow_add _ n 1, mul_comm]
