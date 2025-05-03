@@ -1,51 +1,48 @@
 import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Data.Nat.Prime.Defs
+import Mathlib.Data.Nat.Fib.Basic
 import Mathlib.Tactic.Linarith
+import Mathlib.Data.Real.Sqrt
 
-open Nat
+noncomputable def φ : Real := (√5 + 1) / 2
+noncomputable def φ₂ : Real := (√5 - 1) / 2
 
-theorem infinitude_of_primes : ∀ (n : ℕ), ∃ p ≥ n, Nat.Prime p := by
+theorem phi_sq : φ + 1 = φ * φ := by
+  unfold φ
+  field_simp [mul_add, add_mul]
+  linarith
+
+theorem phi2_sq : φ₂ - 1 = -φ₂ * φ₂ := by
+  unfold φ₂
+  field_simp [sub_mul, mul_sub]
+  linarith
+
+theorem fib_formula : ∀ n, Nat.fib n = (φ ^ n - (-φ₂) ^ n) / Real.sqrt 5 := by
   intro n
-
-  let m := factorial n + 1
-  let p := minFac m
-
-  -- Show that p is prime by being the minimum factor of m, and by m > 1
-  have p_prime : Nat.Prime p := by
-    -- minFac's are prime so long as m ≠ 1
-    refine minFac_prime ?_
-    -- translate m ≠ 1 to 0 < n!
-    apply Ne.symm ∘ Nat.ne_of_lt ∘ Nat.lt_add_of_pos_left
-    exact factorial_pos n
-
-  -- p is the prime we are looking for, we just have to show it satisfies
-  -- the conditions of the proof
-  use p
-
-  -- we already have p is prime, refine the And and we will prove p ≥ n
-  refine And.intro ?_ p_prime
-
-  -- show by contradiction that p cannot be < n
-  by_contra! p_lt_n
-
-  -- p divides n! + 1 by construction, it is the min prime factor of it
-  have p_div_n_fact_plus_one : p ∣ factorial n + 1 := Nat.minFac_dvd m
-
-  -- p divides n! because, by assumption, p < n
-  have p_div_n_fact : p ∣ factorial n := by
-    -- all 0 < p ∧ p ≤ n divide n!
-    refine Nat.dvd_factorial ?_ (Nat.le_of_lt p_lt_n)
-    -- show that 0 < p by contradiction
-    by_contra! p_le_zero
-    -- if p == 0, then p_prime shows that 0 is prime
-    rw [eq_zero_of_le_zero p_le_zero] at p_prime
-    -- 0 isn't prime!
-    apply Nat.not_prime_zero p_prime
-
-  -- with p ∣ n! and p ∣ n! + 1, p must divide 1
-  have p_div_one : p ∣ 1 :=
-    (Nat.dvd_add_iff_right p_div_n_fact).mpr p_div_n_fact_plus_one
-
-  -- finally, we can show that p ≥ n since p is prime and divides one,
-  -- a contradiction
-  exact Nat.Prime.not_dvd_one p_prime p_div_one
+  cases n with
+  | zero => simp
+  | succ n_minus_1 =>
+    cases n_minus_1 with
+    | zero =>
+      unfold φ φ₂
+      field_simp [fib_formula Nat.zero]
+      linarith
+    | succ n =>
+      rw [Nat.fib_add_two]
+      rw [Nat.cast_add]
+      rw [fib_formula n]
+      rw [fib_formula (n + 1)]
+      rw [neg_eq_neg_one_mul φ₂]
+      repeat rw [mul_pow]
+      field_simp [pow_add _ n 1, mul_comm]
+      calc
+        _ = (φ + 1) * φ ^ n + (φ₂ - 1) * (φ₂) ^ n * (-1) ^ n := ?_
+        _ = φ ^ (n + 2) - (φ₂) ^ (n + 2) * (-1) ^ (n + 2) := ?_
+      . linarith
+      . have sq : ∀ (n : ℝ), n * n = n ^ 2 := by
+          intro n
+          rw [← pow_one n, ← pow_add]
+          field_simp
+        field_simp [phi_sq, phi2_sq, sq φ, sq φ₂, ← pow_add, add_comm 2, Mathlib.Tactic.RingNF.add_neg]
+        left
+        field_simp [pow_add]
