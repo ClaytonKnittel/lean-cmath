@@ -8,6 +8,10 @@ def PrimePowerExp (p exp n : ℕ) := p.Prime ∧ p ^ exp = n
 def PrimePower (p n : ℕ) := ∃ exp, PrimePowerExp p exp n
 def IsPrimePower (n : ℕ) := ∃ p, PrimePower p n
 
+theorem ppe_is_pp {n p e : ℕ} (hn : PrimePowerExp p e n) : IsPrimePower n := by
+  exists p
+  exists e
+
 theorem pp_is_pp {n p : ℕ} (hn : PrimePower p n) : IsPrimePower n := by
   exists p
 
@@ -43,22 +47,28 @@ theorem one_factor {n p e : ℕ} (n_ne_0 : n ≠ 0) (p_prime : p.Prime)
 
   exact ⟨pp_has_one_factor, one_factor_is_pp⟩
 
+theorem pp_fact_is_single {n p e : ℕ} (hn : PrimePowerExp p e n)
+    : n.factorization = Finsupp.single p e := by
+  have n_ne_0 : n ≠ 0 := ne_zero (ppe_is_pp hn)
+  let ⟨p_prime, n_eq_p_exp⟩ := hn
+  exact (one_factor n_ne_0 p_prime).mp ⟨p_prime, n_eq_p_exp⟩
+
 theorem dvd_is_pp {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
     : PrimePower p m := by
   have n_ne_0 : n ≠ 0 := ne_zero (pp_is_pp hn)
   have m_ne_0 : m ≠ 0 := ne_zero_of_dvd_ne_zero n_ne_0 h
 
   let ⟨exp, ⟨p_prime, n_eq_p_exp⟩⟩ := hn
-  let h₁ : n.factorization = Finsupp.single p exp :=
-    (one_factor n_ne_0 p_prime).mp ⟨p_prime, n_eq_p_exp⟩
-  let h₂ : m.factorization ≤ n.factorization :=
+
+  have m_le_n : m.factorization ≤ n.factorization :=
     (Nat.factorization_le_iff_dvd m_ne_0 n_ne_0).mpr h
-  let h₃ : ∀ q ≠ p, m.factorization q = 0 := by
+
+  have m_fac_0_except_at_p : ∀ q ≠ p, m.factorization q = 0 := by
     intro q q_ne_p
     have n_fact_0 : n.factorization q = 0 := by
-      rw [h₁]
+      rw [pp_fact_is_single ⟨p_prime, n_eq_p_exp⟩]
       exact Finsupp.single_eq_of_ne q_ne_p.symm
-    let h := h₂ q
+    let h := m_le_n q
     rw [n_fact_0] at h
     exact Nat.eq_zero_of_le_zero h
 
@@ -66,7 +76,7 @@ theorem dvd_is_pp {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
   let h : m.factorization = Finsupp.single p m_exp := Finsupp.ext fun q => by
     by_cases hp : q = p
     · rw [hp, Finsupp.single_eq_same]
-    · rw [Finsupp.single_eq_of_ne, h₃ q hp]
+    · rw [Finsupp.single_eq_of_ne, m_fac_0_except_at_p q hp]
       exact hp ∘ Eq.symm
 
   exists m_exp
