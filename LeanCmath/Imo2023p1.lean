@@ -1,6 +1,7 @@
 import Mathlib.Data.Nat.Prime.Defs
 import Mathlib.Data.Nat.Factors
 import Mathlib.Tactic.Linarith
+import LeanCmath.PrimePower
 
 def ConsecutiveFactors (n a b : ℕ) :=
   a ∣ n ∧ b ∣ n ∧ a < b ∧ ¬∃ c, (c ∣ n ∧ a < c ∧ c < b)
@@ -9,14 +10,6 @@ def Dividable (n : ℕ) :=
   ∀ {a b c : ℕ},
     ConsecutiveFactors n a b ∧ ConsecutiveFactors n b c
     → a ∣ b + c
-
-def PrimePowerExp (p exp n : ℕ) := p.Prime ∧ p ^ exp = n
-def PrimePower (p n : ℕ) := ∃ exp, PrimePowerExp p exp n
-def IsPrimePower (n : ℕ) := ∃ p, PrimePower p n
-
-lemma pp_divisor_is_pp {n m p : ℕ} {hn : PrimePower p n} (hd : m ∣ n)
-    : PrimePower p m := by
-  sorry
 
 lemma pp_is_dividable {n : ℕ} (h : n > 1) : IsPrimePower n → Dividable n := by
   intro pp
