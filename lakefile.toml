@@ -1,6 +1,6 @@
 name = "lean-cmath"
 version = "0.1.0"
-defaultTargets = ["lean-cmath"]
+defaultTargets = ["LeanCmath"]
 
 [[lean_lib]]
 name = "LeanCmath"
