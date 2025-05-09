@@ -46,6 +46,5 @@ lemma pp_is_dividable {n : ℕ} (h : n > 1) : IsPrimePower n → Dividable n := 
 lemma dividable_is_pp {n : ℕ} (h : n > 1) : Dividable n → IsPrimePower n := by
   sorry
 
-theorem P1 : ∀ n > 1, IsPrimePower n ↔ Dividable n := by
-  intro _ h
-  exact ⟨pp_is_dividable h, dividable_is_pp h⟩
+theorem P1 : ∀ n > 1, IsPrimePower n ↔ Dividable n :=
+  fun _ h => ⟨pp_is_dividable h, dividable_is_pp h⟩

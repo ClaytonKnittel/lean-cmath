@@ -72,13 +72,26 @@ theorem dvd_is_pp {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
 
 theorem dvd_is_pp' {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
     : PrimePower p m := by
-  let ⟨e, ⟨pp, _⟩⟩ := hn
+  let ⟨e, ⟨p_prime, n_eq_p_exp⟩⟩ := hn
   let n_ne_0 := ne_zero (pp_is_pp hn)
   let m_ne_0 := ne_zero_of_dvd_ne_zero n_ne_0 h
   let le_fact := (Nat.factorization_le_iff_dvd m_ne_0 n_ne_0).mpr h
   let m_exp := m.factorization p
-  have : ∀ q ≠ p, m.factorization q = 0 :=
-    sorry
+
+  let n_fact_0 : ∀ q ≠ p, n.factorization q = 0 :=
+    fun q h =>
+      Eq.trans
+        (congrArg (· q) ((one_factor n_ne_0 p_prime).mp ⟨p_prime, n_eq_p_exp⟩))
+        (Finsupp.single_eq_of_ne h.symm)
+
+  have m_fact_0 : ∀ q ≠ p, m.factorization q = 0 :=
+    fun q hq => Nat.eq_zero_of_le_zero (n_fact_0 q hq ▸ le_fact q)
+
   let m_fact_eq : m.factorization = Finsupp.single p m_exp :=
-    sorry
-  exact ⟨m_exp, (one_factor m_ne_0 pp).mpr m_fact_eq⟩
+    Finsupp.ext fun q => by
+      by_cases hp : q = p
+      · rw [hp, Finsupp.single_eq_same]
+      · rw [Finsupp.single_eq_of_ne, m_fact_0 q hp]
+        exact hp ∘ Eq.symm
+
+  exact ⟨m_exp, (one_factor m_ne_0 p_prime).mpr m_fact_eq⟩
