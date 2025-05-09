@@ -43,55 +43,25 @@ theorem pp_fact_is_single {n p e : ℕ} (hn : PrimePowerExp p e n)
 
 theorem dvd_is_pp {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
     : PrimePower p m := by
-  have n_ne_0 : n ≠ 0 := ne_zero (pp_is_pp hn)
-  have m_ne_0 : m ≠ 0 := ne_zero_of_dvd_ne_zero n_ne_0 h
-
-  let ⟨exp, ⟨p_prime, n_eq_p_exp⟩⟩ := hn
-
-  have m_le_n : m.factorization ≤ n.factorization :=
-    (Nat.factorization_le_iff_dvd m_ne_0 n_ne_0).mpr h
-
-  have m_fac_0_except_at_p : ∀ q ≠ p, m.factorization q = 0 := by
-    intro q q_ne_p
-    have n_fact_0 : n.factorization q = 0 := by
-      rw [pp_fact_is_single ⟨p_prime, n_eq_p_exp⟩]
-      exact Finsupp.single_eq_of_ne q_ne_p.symm
-    let h := m_le_n q
-    rw [n_fact_0] at h
-    exact Nat.eq_zero_of_le_zero h
-
-  let m_exp := m.factorization p
-  let h : m.factorization = Finsupp.single p m_exp := Finsupp.ext fun q => by
-    by_cases hp : q = p
-    · rw [hp, Finsupp.single_eq_same]
-    · rw [Finsupp.single_eq_of_ne, m_fac_0_except_at_p q hp]
-      exact hp ∘ Eq.symm
-
-  exists m_exp
-  exact (one_factor m_ne_0 p_prime).mpr h
-
-theorem dvd_is_pp' {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
-    : PrimePower p m := by
   let ⟨e, ⟨p_prime, n_eq_p_exp⟩⟩ := hn
   let n_ne_0 := ne_zero (pp_is_pp hn)
   let m_ne_0 := ne_zero_of_dvd_ne_zero n_ne_0 h
   let le_fact := (Nat.factorization_le_iff_dvd m_ne_0 n_ne_0).mpr h
   let m_exp := m.factorization p
+  let n_fact := ((one_factor n_ne_0 p_prime).mp ⟨p_prime, n_eq_p_exp⟩)
 
   let n_fact_0 : ∀ q ≠ p, n.factorization q = 0 :=
     fun q h =>
       Eq.trans
-        (congrArg (· q) ((one_factor n_ne_0 p_prime).mp ⟨p_prime, n_eq_p_exp⟩))
+        (congrArg (· q) n_fact)
         (Finsupp.single_eq_of_ne h.symm)
-
-  have m_fact_0 : ∀ q ≠ p, m.factorization q = 0 :=
-    fun q hq => Nat.eq_zero_of_le_zero (n_fact_0 q hq ▸ le_fact q)
-
   let m_fact_eq : m.factorization = Finsupp.single p m_exp :=
-    Finsupp.ext fun q => by
-      by_cases hp : q = p
-      · rw [hp, Finsupp.single_eq_same]
-      · rw [Finsupp.single_eq_of_ne, m_fact_0 q hp]
-        exact hp ∘ Eq.symm
+    Finsupp.ext fun q =>
+      if h : p = q then
+        h ▸ Finsupp.single_eq_same.symm
+      else
+        (Finsupp.single_eq_of_ne h : (Finsupp.single p m_exp) q = 0).symm ▸
+          Nat.eq_zero_of_le_zero
+            (n_fact_0 q (h ∘ Eq.symm) ▸ le_fact q)
 
   exact ⟨m_exp, (one_factor m_ne_0 p_prime).mpr m_fact_eq⟩
