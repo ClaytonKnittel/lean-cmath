@@ -39,11 +39,6 @@ theorem one_factor {n p e : ℕ} (n_ne_0 : n ≠ 0) (p_prime : p.Prime) :
       exact ⟨p_prime, this.symm⟩
   ⟩
 
-theorem pp_fact_is_single {n p e : ℕ} (hn : PrimePowerExp p e n)
-    : n.factorization = single p e :=
-  let ⟨pp, _⟩ := hn
-  ((one_factor ∘ ne_zero ∘ ppe_is_pp) hn pp).mp hn
-
 theorem dvd_is_pp {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
     : PrimePower p m :=
   let ⟨_, ⟨p_prime, n_eq_p_exp⟩⟩ := hn
