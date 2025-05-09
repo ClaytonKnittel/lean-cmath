@@ -8,12 +8,11 @@ def PrimePowerExp (p exp n : ℕ) := p.Prime ∧ p ^ exp = n
 def PrimePower (p n : ℕ) := ∃ exp, PrimePowerExp p exp n
 def IsPrimePower (n : ℕ) := ∃ p, PrimePower p n
 
-theorem ppe_is_pp {n p e : ℕ} (hn : PrimePowerExp p e n) : IsPrimePower n := by
-  exists p
-  exists e
+theorem ppe_is_pp {n p e : ℕ} (hn : PrimePowerExp p e n) : IsPrimePower n :=
+  ⟨p, e, hn⟩
 
-theorem pp_is_pp {n p : ℕ} (hn : PrimePower p n) : IsPrimePower n := by
-  exists p
+theorem pp_is_pp {n p : ℕ} (hn : PrimePower p n) : IsPrimePower n :=
+  ⟨p, hn⟩
 
 namespace PrimePower
 
@@ -23,29 +22,20 @@ theorem gt_zero {n : ℕ} (hn : IsPrimePower n) : 0 < n := by
   exact Nat.pow_pos p_prime.pos
 
 theorem ne_zero {n : ℕ} (hn : IsPrimePower n) : n ≠ 0 :=
-  Nat.pos_iff_ne_zero.mp (gt_zero hn)
+  (gt_zero hn).ne'
 
-theorem one_factor {n p e : ℕ} (n_ne_0 : n ≠ 0) (p_prime : p.Prime)
-    : PrimePowerExp p e n ↔ n.factorization = Finsupp.single p e := by
-  have pp_has_one_factor : PrimePowerExp p e n → n.factorization = Finsupp.single p e := by
-    intro h
-    let ⟨p_prime, n_eq_p_exp⟩ := h
-    rw [← n_eq_p_exp]
-    exact Nat.Prime.factorization_pow p_prime
-
-  have one_factor_is_pp : n.factorization = Finsupp.single p e → PrimePowerExp p e n := by
-    have p_e_ne_0 : p ^ e ≠ 0 := pow_ne_zero e (Nat.Prime.ne_zero p_prime)
-
-    intro h
-    let x : (p ^ e).factorization = Finsupp.single p e :=
-      Nat.Prime.factorization_pow p_prime
-    rw [← x] at h
-    let same_factorizations : ∀ q, n.factorization q = (p ^ e).factorization q :=
-      fun q => congrArg (· q) h
-    let y := Nat.eq_of_factorization_eq n_ne_0 p_e_ne_0 same_factorizations
-    exact ⟨p_prime, y.symm⟩
-
-  exact ⟨pp_has_one_factor, one_factor_is_pp⟩
+theorem one_factor {n p e : ℕ} (n_ne_0 : n ≠ 0) (p_prime : p.Prime) :
+    PrimePowerExp p e n ↔ n.factorization = Finsupp.single p e :=
+  ⟨
+    fun ⟨_, h⟩ => h ▸ Nat.Prime.factorization_pow p_prime,
+    fun h : n.factorization = (Finsupp.single p e) => by
+      have : n = p ^ e :=
+        Nat.eq_of_factorization_eq
+          n_ne_0
+          (pow_ne_zero _ p_prime.ne_zero)
+          (fun q => congrArg (· q) (h ▸ (Nat.Prime.factorization_pow p_prime).symm))
+      exact ⟨p_prime, this.symm⟩
+  ⟩
 
 theorem pp_fact_is_single {n p e : ℕ} (hn : PrimePowerExp p e n)
     : n.factorization = Finsupp.single p e := by
