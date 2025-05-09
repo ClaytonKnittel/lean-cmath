@@ -6,6 +6,13 @@ import LeanCmath.PrimePower
 def ConsecutiveFactors (n a b : ℕ) :=
   a ∣ n ∧ b ∣ n ∧ a < b ∧ ¬∃ c, (c ∣ n ∧ a < c ∧ c < b)
 
+theorem inv_cons_factors {n a b x y : ℕ} (ha : n = x * a)
+    (hb : n = y * b) (h : ConsecutiveFactors n a b)
+    : ConsecutiveFactors n y x :=
+  sorry
+
+-- theorem minFac_cons_factor {n p : ℕ} (hp : p = n.minFac)
+
 def Dividable (n : ℕ) :=
   ∀ {a b c : ℕ},
     ConsecutiveFactors n a b ∧ ConsecutiveFactors n b c
