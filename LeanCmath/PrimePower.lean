@@ -17,9 +17,8 @@ theorem pp_is_pp {n p : ℕ} (hn : PrimePower p n) : IsPrimePower n :=
 namespace PrimePower
 
 theorem gt_zero {n : ℕ} (hn : IsPrimePower n) : 0 < n := by
-  let ⟨_, ⟨_, ⟨p_prime, n_eq_p_exp⟩⟩⟩ := hn
-  rw [← n_eq_p_exp]
-  exact Nat.pow_pos p_prime.pos
+  let ⟨_, ⟨_, ⟨p_prime, h⟩⟩⟩ := hn
+  exact h.symm ▸ Nat.pow_pos p_prime.pos
 
 theorem ne_zero {n : ℕ} (hn : IsPrimePower n) : n ≠ 0 :=
   (gt_zero hn).ne'
@@ -70,3 +69,16 @@ theorem dvd_is_pp {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
 
   exists m_exp
   exact (one_factor m_ne_0 p_prime).mpr h
+
+theorem dvd_is_pp' {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
+    : PrimePower p m := by
+  let ⟨e, ⟨pp, _⟩⟩ := hn
+  let n_ne_0 := ne_zero (pp_is_pp hn)
+  let m_ne_0 := ne_zero_of_dvd_ne_zero n_ne_0 h
+  let le_fact := (Nat.factorization_le_iff_dvd m_ne_0 n_ne_0).mpr h
+  let m_exp := m.factorization p
+  have : ∀ q ≠ p, m.factorization q = 0 :=
+    sorry
+  let m_fact_eq : m.factorization = Finsupp.single p m_exp :=
+    sorry
+  exact ⟨m_exp, (one_factor m_ne_0 pp).mpr m_fact_eq⟩
