@@ -19,9 +19,9 @@ theorem pp_is_pp {n p : ℕ} (hn : PrimePower p n) : IsPrimePower n :=
 
 namespace PrimePower
 
-theorem gt_zero {n : ℕ} (hn : IsPrimePower n) : 0 < n := by
+theorem gt_zero {n : ℕ} (hn : IsPrimePower n) : 0 < n :=
   let ⟨_, ⟨_, ⟨p_prime, h⟩⟩⟩ := hn
-  exact h.symm ▸ pow_pos p_prime.pos
+  h.symm ▸ pow_pos p_prime.pos
 
 theorem ne_zero {n : ℕ} (hn : IsPrimePower n) : n ≠ 0 :=
   (gt_zero hn).ne'
@@ -45,8 +45,8 @@ theorem pp_fact_is_single {n p e : ℕ} (hn : PrimePowerExp p e n)
   ((one_factor ∘ ne_zero ∘ ppe_is_pp) hn pp).mp hn
 
 theorem dvd_is_pp {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
-    : PrimePower p m := by
-  let ⟨e, ⟨p_prime, n_eq_p_exp⟩⟩ := hn
+    : PrimePower p m :=
+  let ⟨_, ⟨p_prime, n_eq_p_exp⟩⟩ := hn
   let n_ne_0 := ne_zero (pp_is_pp hn)
   let m_ne_0 := ne_zero_of_dvd_ne_zero n_ne_0 h
   let le_fact := (factorization_le_iff_dvd m_ne_0 n_ne_0).mpr h
@@ -66,4 +66,4 @@ theorem dvd_is_pp {n p m : ℕ} (hn : PrimePower p n) (h : m ∣ n)
         (single_eq_of_ne h : (single p m_exp) q = 0).symm ▸
           eq_zero_of_le_zero (n_fact_0 q (h ∘ Eq.symm) ▸ le_fact q)
 
-  exact ⟨m_exp, (one_factor m_ne_0 p_prime).mpr m_fact_eq⟩
+  ⟨m_exp, (one_factor m_ne_0 p_prime).mpr m_fact_eq⟩
