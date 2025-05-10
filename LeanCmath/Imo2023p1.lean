@@ -1,17 +1,24 @@
 import Mathlib.Algebra.IsPrimePow
 import Mathlib.Data.Nat.Prime.Defs
 import Mathlib.Data.Nat.Factors
+import Mathlib.Tactic.ApplyFun
+import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 
 def ConsecutiveFactors (n a b : ℕ) :=
   a ∣ n ∧ b ∣ n ∧ a < b ∧ ¬∃ c, (c ∣ n ∧ a < c ∧ c < b)
 
-theorem inv_cons_factors {n a b x y : ℕ} (ha : n = x * a)
-    (hb : n = y * b) (h : ConsecutiveFactors n a b)
+theorem inv_cons_factors {n a b x y : ℕ} (ha : n = a * x)
+    (hb : n = b * y) (h : ConsecutiveFactors n a b)
     : ConsecutiveFactors n y x :=
   sorry
 
--- theorem minFac_cons_factor {n p : ℕ} (hp : p = n.minFac)
+theorem minFac_cons_factor {n : ℕ} (hn : ¬IsPrimePow n)
+    : ∃ q e,
+      q.Prime ∧
+      ConsecutiveFactors n (n.minFac ^ e) (n.minFac ^ (e + 1)) ∧
+      ConsecutiveFactors n (n.minFac ^ (e + 1)) q :=
+  sorry
 
 def Dividable (n : ℕ) :=
   ∀ {a b c : ℕ},
@@ -50,15 +57,49 @@ lemma cons_are_p_apart {x y p n : ℕ} (p_prime : p.Prime)
   rw [x_eq_p_exp, y_eq_p_exp, ← exp_eq]
   exact rfl
 
-lemma pp_is_dividable {n : ℕ} : IsPrimePow n → Dividable n :=
-  fun ⟨p, e, hp, hpp⟩ _ _ _ ⟨xy_cons, yz_cons⟩ => by
-    let y_subs := cons_are_p_apart hp.nat_prime ⟨e, hpp⟩ xy_cons
-    let z_subs := cons_are_p_apart hp.nat_prime ⟨e, hpp⟩ yz_cons
-    rw [← z_subs, ← y_subs]
-    exists p + p ^ 2
-    linarith
+lemma pp_is_dividable {n : ℕ} : IsPrimePow n → Dividable n := by
+  intro ⟨p, e, hp, hpp⟩ _ _ _ ⟨xy_cons, yz_cons⟩
+  let y_subs := cons_are_p_apart hp.nat_prime ⟨e, hpp⟩ xy_cons
+  let z_subs := cons_are_p_apart hp.nat_prime ⟨e, hpp⟩ yz_cons
+  rw [← z_subs, ← y_subs]
+  exists p + p ^ 2
+  linarith
 
-lemma dividable_is_pp {n : ℕ} (h : n > 1) : Dividable n → IsPrimePow n := by
+lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n := by
+  intro hd
+  let p := n.minFac
+  by_contra hn
+  let ⟨q, e, q_prime, cxy, cyz⟩ := minFac_cons_factor hn
+  let ⟨x_div_n, y_div_n, _⟩ := cxy
+  let ⟨_, z_div_n, _⟩ := cyz
+  let ⟨x_inv, hx⟩ := x_div_n
+  let ⟨y_inv, hy⟩ := y_div_n
+  let ⟨z_inv, hz⟩ := z_div_n
+  let cyx_inv := inv_cons_factors hx hy cxy
+  let czy_inv := inv_cons_factors hy hz cyz
+
+  let ⟨f, h⟩ := hd ⟨czy_inv, cyx_inv⟩
+
+  let h : n.minFac ^ (e + 1) ∣ q * (1 + n.minFac) := by
+    let h : n.minFac ^ (e + 1) * q * _ = n.minFac ^ (e + 1) * q * _ :=
+      congrArg (n.minFac ^ (e + 1) * q * ·) h
+    exists f
+
+    have : Function.Injective (· * n) :=
+      fun _ _ h => Nat.mul_right_cancel (Nat.zero_lt_of_lt n_gt_1) h
+    apply_fun (· * n)
+    dsimp
+
+    rw [mul_add, add_mul, mul_one]
+    nth_rw 1 [hy]
+    nth_rw 3 [hx]
+    nth_rw 5 [hz]
+
+    rw [mul_assoc, ← Nat.mul_add q, ← mul_assoc, ← Nat.pow_add_one',
+        ← Nat.mul_add, ← mul_assoc, mul_comm q, mul_assoc _ f, mul_rotate' f,
+        ← mul_assoc]
+    exact h
+
   sorry
 
 theorem P1 : ∀ n > 1, IsPrimePow n ↔ Dividable n :=
