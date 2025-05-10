@@ -1,5 +1,6 @@
 import Mathlib.Algebra.IsPrimePow
 import Mathlib.Data.Nat.Prime.Defs
+import Mathlib.Data.Nat.Factorization.Defs
 import Mathlib.Data.Nat.Factors
 import Mathlib.Tactic.ApplyFun
 import Mathlib.Tactic.FieldSimp
@@ -80,9 +81,9 @@ lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n 
 
   let ⟨f, h⟩ := hd ⟨czy_inv, cyx_inv⟩
 
-  let h : n.minFac ^ (e + 1) ∣ q * (1 + n.minFac) := by
-    let h : n.minFac ^ (e + 1) * q * _ = n.minFac ^ (e + 1) * q * _ :=
-      congrArg (n.minFac ^ (e + 1) * q * ·) h
+  let h : p ^ (e + 1) ∣ q * (1 + p) := by
+    let h : p ^ (e + 1) * q * _ = p ^ (e + 1) * q * _ :=
+      congrArg (p ^ (e + 1) * q * ·) h
     exists f
 
     have : Function.Injective (· * n) :=
@@ -92,14 +93,27 @@ lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n 
 
     rw [mul_add, add_mul, mul_one]
     nth_rw 1 [hy]
-    nth_rw 3 [hx]
-    nth_rw 5 [hz]
+    nth_rw 2 [hx]
+    nth_rw 3 [hz]
 
     rw [mul_assoc, ← Nat.mul_add q, ← mul_assoc, ← Nat.pow_add_one',
         ← Nat.mul_add, ← mul_assoc, mul_comm q, mul_assoc _ f, mul_rotate' f,
         ← mul_assoc]
     exact h
 
+  have h₁ : 0 < (p ^ (e + 1)).factorization p := by
+    let q : (p ^ (e + 1)).factorization = _ :=
+      (n.minFac_prime (Nat.ne_of_lt n_gt_1).symm).factorization_pow
+    let r := congrArg (· n.minFac) q
+    dsimp at r
+    let s : (p ^ (e + 1)).factorization p = e + 1 := Finsupp.single_eq_same ▸ r
+    exact
+      (
+        Finsupp.single_eq_same ▸
+        (congrArg (· p)
+         (n.minFac_prime (Nat.ne_of_lt n_gt_1).symm).factorization_pow)
+      )
+      ▸ Nat.zero_lt_succ e
   sorry
 
 theorem P1 : ∀ n > 1, IsPrimePow n ↔ Dividable n :=
