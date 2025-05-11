@@ -6,6 +6,11 @@ import Mathlib.Tactic.ApplyFun
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 
+theorem p_succ_fact_zero {p : ℕ} (hp : p.Prime)
+    : (p + 1).factorization p = 0 := by
+  apply Nat.factorization_eq_zero_of_not_dvd
+  exact hp.not_dvd_one ∘ Nat.dvd_add_self_left.mp
+
 def ConsecutiveFactors (n a b : ℕ) :=
   a ∣ n ∧ b ∣ n ∧ a < b ∧ ¬∃ c, (c ∣ n ∧ a < c ∧ c < b)
 
@@ -16,7 +21,7 @@ theorem inv_cons_factors {n a b x y : ℕ} (ha : n = a * x)
 
 theorem minFac_cons_factor {n : ℕ} (hn : ¬IsPrimePow n)
     : ∃ q e,
-      q.Prime ∧
+      q.Prime ∧ q ≠ n.minFac ∧
       ConsecutiveFactors n (n.minFac ^ e) (n.minFac ^ (e + 1)) ∧
       ConsecutiveFactors n (n.minFac ^ (e + 1)) q :=
   sorry
@@ -69,19 +74,19 @@ lemma pp_is_dividable {n : ℕ} : IsPrimePow n → Dividable n := by
 lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n := by
   intro hd
   let p := n.minFac
+  let p_prime := (n.minFac_prime (Nat.ne_of_lt n_gt_1).symm)
+
   by_contra hn
-  let ⟨q, e, q_prime, cxy, cyz⟩ := minFac_cons_factor hn
+  let ⟨q, e, q_prime, q_ne_p, cxy, cyz⟩ := minFac_cons_factor hn
   let ⟨x_div_n, y_div_n, _⟩ := cxy
   let ⟨_, z_div_n, _⟩ := cyz
-  let ⟨x_inv, hx⟩ := x_div_n
-  let ⟨y_inv, hy⟩ := y_div_n
-  let ⟨z_inv, hz⟩ := z_div_n
-  let cyx_inv := inv_cons_factors hx hy cxy
-  let czy_inv := inv_cons_factors hy hz cyz
+  let ⟨_, hx⟩ := x_div_n
+  let ⟨_, hy⟩ := y_div_n
+  let ⟨_, hz⟩ := z_div_n
 
-  let ⟨f, h⟩ := hd ⟨czy_inv, cyx_inv⟩
+  let ⟨f, h⟩ := hd ⟨inv_cons_factors hy hz cyz, inv_cons_factors hx hy cxy⟩
 
-  let h : p ^ (e + 1) ∣ q * (1 + p) := by
+  have h : p ^ (e + 1) ∣ q * (p + 1) := by
     let h : p ^ (e + 1) * q * _ = p ^ (e + 1) * q * _ :=
       congrArg (p ^ (e + 1) * q * ·) h
     exists f
@@ -91,7 +96,7 @@ lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n 
     apply_fun (· * n)
     dsimp
 
-    rw [mul_add, add_mul, mul_one]
+    rw [add_comm, mul_add, add_mul, mul_one]
     nth_rw 1 [hy]
     nth_rw 2 [hx]
     nth_rw 3 [hz]
@@ -101,20 +106,25 @@ lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n 
         ← mul_assoc]
     exact h
 
-  have h₁ : 0 < (p ^ (e + 1)).factorization p := by
-    let q : (p ^ (e + 1)).factorization = _ :=
-      (n.minFac_prime (Nat.ne_of_lt n_gt_1).symm).factorization_pow
+  have hl : 0 < (p ^ (e + 1)).factorization p := by
+    let q : (p ^ (e + 1)).factorization = _ := p_prime.factorization_pow
     let r := congrArg (· n.minFac) q
     dsimp at r
-    let s : (p ^ (e + 1)).factorization p = e + 1 := Finsupp.single_eq_same ▸ r
-    exact
-      (
-        Finsupp.single_eq_same ▸
-        (congrArg (· p)
-         (n.minFac_prime (Nat.ne_of_lt n_gt_1).symm).factorization_pow)
-      )
-      ▸ Nat.zero_lt_succ e
-  sorry
+    rw [Finsupp.single_eq_same] at r
+    exact r.symm ▸ Nat.zero_lt_succ e
+  apply Nat.not_le_of_gt hl
+
+  have hr : (q * (p + 1)).factorization p = 0 := by
+    rw [Nat.factorization_mul q_prime.ne_zero p.succ_ne_zero]
+    dsimp
+    rw [q_prime.factorization, Finsupp.single_eq_of_ne q_ne_p]
+    rw [p_succ_fact_zero p_prime]
+
+  exact hr ▸ (
+      Nat.factorization_le_iff_dvd
+        (pow_ne_zero (e + 1) p_prime.ne_zero)
+        (Nat.mul_ne_zero q_prime.ne_zero p.succ_ne_zero)
+    ).mpr h p
 
 theorem P1 : ∀ n > 1, IsPrimePow n ↔ Dividable n :=
   fun _ h => ⟨pp_is_dividable, dividable_is_pp h⟩
