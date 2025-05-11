@@ -6,6 +6,11 @@ import Mathlib.Tactic.ApplyFun
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 
+lemma mul_cmp_compl {a b x y : ℕ} (hab : a < b) (hy : 0 < y)
+    (h : a * x = b * y) : y < x :=
+  Nat.lt_of_mul_lt_mul_left
+    (h ▸ Nat.mul_lt_mul_of_pos_right hab hy)
+
 theorem p_succ_fact_zero {p : ℕ} (hp : p.Prime)
     : (p + 1).factorization p = 0 := by
   apply Nat.factorization_eq_zero_of_not_dvd
@@ -14,9 +19,17 @@ theorem p_succ_fact_zero {p : ℕ} (hp : p.Prime)
 def ConsecutiveFactors (n a b : ℕ) :=
   a ∣ n ∧ b ∣ n ∧ a < b ∧ ¬∃ c, (c ∣ n ∧ a < c ∧ c < b)
 
-theorem inv_cons_factors {n a b x y : ℕ} (ha : n = a * x)
+theorem inv_cons_factors {n a b x y : ℕ} (hn : 0 < n) (ha : n = a * x)
     (hb : n = b * y) (h : ConsecutiveFactors n a b)
-    : ConsecutiveFactors n y x :=
+    : ConsecutiveFactors n y x := by
+  let ⟨_, _, a_lt_b, no_c⟩ := h
+  have x_dvd_n : x ∣ n := ⟨a, Nat.mul_comm _ _ ▸ ha⟩
+  have y_dvd_n : y ∣ n := ⟨b, Nat.mul_comm _ _ ▸ hb⟩
+  have y_ne_0 : 0 < y :=
+    Nat.zero_lt_of_ne_zero ((Nat.mul_ne_zero_iff).mp (hb ▸ hn.ne).symm).right
+  have y_lt_x : y < x :=
+    mul_cmp_compl a_lt_b y_ne_0 (ha ▸ hb)
+  by_contra hc
   sorry
 
 theorem minFac_cons_factor {n : ℕ} (hn : ¬IsPrimePow n)
@@ -84,7 +97,12 @@ lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n 
   let ⟨_, hy⟩ := y_div_n
   let ⟨_, hz⟩ := z_div_n
 
-  let ⟨f, h⟩ := hd ⟨inv_cons_factors hy hz cyz, inv_cons_factors hx hy cxy⟩
+  have n_gt_0 := Nat.zero_lt_of_lt n_gt_1
+  let ⟨f, h⟩ :=
+    hd ⟨
+      inv_cons_factors n_gt_0 hy hz cyz,
+      inv_cons_factors n_gt_0 hx hy cxy
+    ⟩
 
   have h : p ^ (e + 1) ∣ q * (p + 1) := by
     let h : p ^ (e + 1) * q * _ = p ^ (e + 1) * q * _ :=
