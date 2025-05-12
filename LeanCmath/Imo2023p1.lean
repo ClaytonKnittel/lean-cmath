@@ -22,15 +22,26 @@ def ConsecutiveFactors (n a b : ℕ) :=
 theorem inv_cons_factors {n a b x y : ℕ} (hn : 0 < n) (ha : n = a * x)
     (hb : n = b * y) (h : ConsecutiveFactors n a b)
     : ConsecutiveFactors n y x := by
+  have div_n_ne_0 {a b : ℕ} (h : n = a * b) : 0 < b :=
+    Nat.zero_lt_of_ne_zero ((Nat.mul_ne_zero_iff).mp (h ▸ hn.ne).symm).right
+
   let ⟨_, _, a_lt_b, no_c⟩ := h
-  have x_dvd_n : x ∣ n := ⟨a, Nat.mul_comm _ _ ▸ ha⟩
-  have y_dvd_n : y ∣ n := ⟨b, Nat.mul_comm _ _ ▸ hb⟩
-  have y_ne_0 : 0 < y :=
-    Nat.zero_lt_of_ne_zero ((Nat.mul_ne_zero_iff).mp (hb ▸ hn.ne).symm).right
-  have y_lt_x : y < x :=
-    mul_cmp_compl a_lt_b y_ne_0 (ha ▸ hb)
+  have y_lt_x := mul_cmp_compl a_lt_b (div_n_ne_0 hb) (ha ▸ hb)
+
+  let ha := Nat.mul_comm _ _ ▸ ha
+  let hb := Nat.mul_comm _ _ ▸ hb
+  refine ⟨⟨b, hb⟩, ⟨a, ha⟩, y_lt_x, ?_⟩
+
   by_contra hc
-  sorry
+  let ⟨c, ⟨z, hc⟩, y_lt_c, c_lt_x⟩ := hc
+  apply no_c
+
+  exists z
+  exact ⟨
+    ⟨c, Nat.mul_comm _ _ ▸ hc⟩,
+    mul_cmp_compl c_lt_x (div_n_ne_0 ha) (hc ▸ ha),
+    mul_cmp_compl y_lt_c (div_n_ne_0 hc) (hc ▸ hb.symm)
+  ⟩
 
 theorem minFac_cons_factor {n : ℕ} (hn : ¬IsPrimePow n)
     : ∃ q e,
