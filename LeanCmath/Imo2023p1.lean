@@ -1,4 +1,5 @@
 import Mathlib.Algebra.IsPrimePow
+import Mathlib.Data.Nat.Log
 import Mathlib.Data.Nat.Prime.Defs
 import Mathlib.Data.Nat.Factorization.Defs
 import Mathlib.Data.Nat.Factors
@@ -43,12 +44,26 @@ theorem inv_cons_factors {n a b x y : ℕ} (hn : 0 < n) (ha : n = a * x)
     mul_cmp_compl y_lt_c (div_n_ne_0 hc) (hc ▸ hb.symm)
   ⟩
 
-theorem minFac_cons_factor {n : ℕ} (hn : ¬IsPrimePow n)
+theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
     : ∃ q e,
       q.Prime ∧ q ≠ n.minFac ∧
       ConsecutiveFactors n (n.minFac ^ e) (n.minFac ^ (e + 1)) ∧
-      ConsecutiveFactors n (n.minFac ^ (e + 1)) q :=
-  sorry
+      ConsecutiveFactors n (n.minFac ^ (e + 1)) q := by
+  let p := n.minFac
+  have p_prime := n.minFac_prime (Nat.ne_of_lt hn).symm
+
+  let c := ordCompl[p] n
+  have : 1 < c := by sorry
+  let q := c.minFac
+  have q_prime := c.minFac_prime (Nat.ne_of_lt this).symm
+  have : p < q := by sorry
+
+  let e := min (n.factorization p) (q.log p)
+
+  exists q, e
+  refine ⟨q_prime, (Nat.ne_of_lt this).symm, ?_, ?_⟩
+  . sorry
+  . sorry
 
 def Dividable (n : ℕ) :=
   ∀ {a b c : ℕ},
@@ -101,7 +116,7 @@ lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n 
   let p_prime := (n.minFac_prime (Nat.ne_of_lt n_gt_1).symm)
 
   by_contra hn
-  let ⟨q, e, q_prime, q_ne_p, cxy, cyz⟩ := minFac_cons_factor hn
+  let ⟨q, e, q_prime, q_ne_p, cxy, cyz⟩ := minFac_cons_factor n_gt_1 hn
   let ⟨x_div_n, y_div_n, _⟩ := cxy
   let ⟨_, z_div_n, _⟩ := cyz
   let ⟨_, hx⟩ := x_div_n
