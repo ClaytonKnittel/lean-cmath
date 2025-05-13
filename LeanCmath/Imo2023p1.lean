@@ -38,7 +38,7 @@ def ConsecutiveFactors (n a b : ℕ) :=
   a ∣ n ∧ b ∣ n ∧ a < b ∧ ¬∃ c, (c ∣ n ∧ a < c ∧ c < b)
 
 theorem not_pow_cons_factors_other_prime {p e c : ℕ} (hp : p.Prime)
-    (c_gt_e : c > p ^ e) (c_lt_p_e_plus1 : c < p ^ (e + 1))
+    (c_gt_e : c > p ^ e) (c_lt_p_e_succ : c < p ^ (e + 1))
     : ∃ q ≠ p, q.Prime ∧ q ∣ c := by
   by_contra h
   have : ∃ c_e, c.factorization = Finsupp.single p c_e := by
@@ -65,9 +65,9 @@ theorem not_pow_cons_factors_other_prime {p e c : ℕ} (hp : p.Prime)
 
   have gt_e : c_e ≥ e + 1 :=
     (Nat.pow_lt_pow_iff_right hp.one_lt).mp (c_is_pow_p ▸ c_gt_e)
-  have lt_e_plus1 : c_e < e + 1 :=
-    (Nat.pow_lt_pow_iff_right hp.one_lt).mp (c_is_pow_p ▸ c_lt_p_e_plus1)
-  exact Nat.le_lt_asymm gt_e lt_e_plus1
+  have lt_e_succ : c_e < e + 1 :=
+    (Nat.pow_lt_pow_iff_right hp.one_lt).mp (c_is_pow_p ▸ c_lt_p_e_succ)
+  exact Nat.le_lt_asymm gt_e lt_e_succ
 
 theorem inv_cons_factors {n a b x y : ℕ} (hn : 0 < n) (ha : n = a * x)
     (hb : n = b * y) (h : ConsecutiveFactors n a b)
@@ -115,8 +115,8 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   -- use Nat.le_minFac
   have p_lt_q : p < q := by sorry
 
-  let e_plus1 := min (n.factorization p) (p.log q)
-  have : 0 < e_plus1 :=
+  let e_succ := min (n.factorization p) (p.log q)
+  have : 0 < e_succ :=
     lt_min
       (p_prime.factorization_pos_of_dvd
         n_ne_0
@@ -135,7 +135,7 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   have p_e_succ_dvd_n : p ^ (e + 1) ∣ n :=
     he ▸ this (Nat.min_le_left _ _)
 
-  have p_e_plus1_lt_q : p ^ (e + 1) < q := sorry
+  have p_e_succ_lt_q : p ^ (e + 1) < q := sorry
 
   have p_unique {r : ℕ} (r_lt_q : r < q) (r_ne_p : r ≠ p) : n.factorization r = 0 := by
     let c_n_fact_eq : c.factorization r = n.factorization r :=
@@ -154,24 +154,24 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   have : ConsecutiveFactors n (p ^ e) (p ^ (e + 1)) := by
     refine ⟨p_e_dvd_n, p_e_succ_dvd_n, Nat.pow_lt_pow_succ p_prime.one_lt, ?_⟩
     by_contra hd
-    obtain ⟨d, d_dvd_n, d_gt_p_e, d_lt_p_e_plus1⟩ := hd
+    obtain ⟨d, d_dvd_n, d_gt_p_e, d_lt_p_e_succ⟩ := hd
     obtain ⟨r, r_ne_p, r_prime, r_dvd_d⟩ :=
-      not_pow_cons_factors_other_prime p_prime d_gt_p_e d_lt_p_e_plus1
+      not_pow_cons_factors_other_prime p_prime d_gt_p_e d_lt_p_e_succ
     apply
       not_not_intro
         (p_unique
           (Nat.lt_of_le_of_lt
             (Nat.le_of_dvd (dvd_ne_zero n_ne_0 d_dvd_n) r_dvd_d)
-            (d_lt_p_e_plus1.trans p_e_plus1_lt_q))
+            (d_lt_p_e_succ.trans p_e_succ_lt_q))
           r_ne_p)
     exact dvd_n_fact_ne_zero n_ne_0 r_prime (r_dvd_d.trans d_dvd_n)
   refine ⟨this, ?_⟩
 
   have : ConsecutiveFactors n (p ^ (e + 1)) q := by
     have q_dvd_n := c.minFac_dvd.trans (Nat.ordCompl_dvd n p)
-    refine ⟨p_e_succ_dvd_n, q_dvd_n, p_e_plus1_lt_q, ?_⟩
+    refine ⟨p_e_succ_dvd_n, q_dvd_n, p_e_succ_lt_q, ?_⟩
     by_contra h
-    obtain ⟨d, d_dvd_n, d_gt_p_e_plus1, d_lt_q⟩ := h
+    obtain ⟨d, d_dvd_n, d_gt_p_e_succ, d_lt_q⟩ := h
 
     have : ∃ d_e, d.factorization = Finsupp.single p d_e := sorry
     obtain ⟨d_e, hd_e⟩ := this
@@ -181,21 +181,22 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
         (Nat.ne_of_lt (dvd_ne_zero n_ne_0 d_dvd_n)).symm
         (Nat.pow_pos (Nat.zero_lt_of_ne_zero p_prime.ne_zero)).ne.symm
         fun r => congrArg (· r) (Nat.Prime.factorization_pow p_prime ▸ hd_e)
-    have d_e_gt_e_succ : d_e > e_plus1 := sorry
+    have d_e_gt_e_succ : d_e > e_succ := sorry
 
     by_cases he_min : n.factorization p < p.log q
     . -- show d_e > n.factorization p
-      let qx := min_eq_left he_min.le
-      dsimp only [e_plus1] at d_e_gt_e_succ
-      let qy := qx ▸ d_e_gt_e_succ
-      sorry
-    . -- show p ^ d_e > q
-      let qx := min_eq_right (Nat.ge_of_not_lt he_min)
+      let d_e_eq_fact := min_eq_left he_min.le
+      dsimp only [e_succ] at d_e_gt_e_succ
+      let qy := d_e_eq_fact ▸ d_e_gt_e_succ
+
       -- let xx := (multiplicity_lt_iff_not_dvd _).mp this
       let xx := pow_dvd_iff_le_emultiplicity.mp (d_eq_p_e ▸ d_dvd_n)
       have : multiplicity p n = n.factorization p :=
         Nat.multiplicity_eq_factorization p_prime n_ne_0
       have : emultiplicity p n = multiplicity p n := sorry
+      sorry
+    . -- show p ^ d_e > q
+      let d_e_eq_log := min_eq_right (Nat.ge_of_not_lt he_min)
       sorry
   exact this
 
