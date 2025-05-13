@@ -4,9 +4,12 @@ import Mathlib.Data.Nat.Prime.Defs
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Factorization.Defs
 import Mathlib.Data.Nat.Factors
+import Mathlib.RingTheory.Multiplicity
 import Mathlib.Tactic.ApplyFun
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
+
+open FiniteMultiplicity
 
 lemma dvd_ne_zero {a b : ℕ} (hb : b ≠ 0) (h : a ∣ b) : 0 < a :=
   Nat.zero_lt_of_ne_zero (fun ha => hb (zero_dvd_iff.mp (ha ▸ h)))
@@ -165,7 +168,33 @@ theorem minFac_cons_factor' {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   refine ⟨this, ?_⟩
 
   have : ConsecutiveFactors n (p ^ (e + 1)) q := by
-    sorry
+    have q_dvd_n := c.minFac_dvd.trans (Nat.ordCompl_dvd n p)
+    refine ⟨p_e_succ_dvd_n, q_dvd_n, p_e_plus1_lt_q, ?_⟩
+    by_contra h
+    obtain ⟨d, d_dvd_n, d_gt_p_e_plus1, d_lt_q⟩ := h
+    have : ∃ d_e, d.factorization = Finsupp.single p d_e := sorry
+    obtain ⟨d_e, hd_e⟩ := this
+    have d_eq_p_e :=
+      Nat.eq_of_factorization_eq
+        (Nat.ne_of_lt (dvd_ne_zero n_ne_0 d_dvd_n)).symm
+        (Nat.pow_pos (Nat.zero_lt_of_ne_zero p_prime.ne_zero)).ne.symm
+        fun r => congrArg (· r) (Nat.Prime.factorization_pow p_prime ▸ hd_e)
+    have d_e_gt_e_succ : d_e > e_plus1 := sorry
+
+    by_cases he_min : n.factorization p < p.log q
+    . -- show d_e > n.factorization p
+      let qx := min_eq_left he_min.le
+      dsimp only [e_plus1] at d_e_gt_e_succ
+      let qy := qx ▸ d_e_gt_e_succ
+      sorry
+    . -- show p ^ d_e > q
+      let qx := min_eq_right (Nat.ge_of_not_lt he_min)
+      -- let xx := (multiplicity_lt_iff_not_dvd _).mp this
+      let xx := pow_dvd_iff_le_emultiplicity.mp (d_eq_p_e ▸ d_dvd_n)
+      have : multiplicity p n = n.factorization p :=
+        Nat.multiplicity_eq_factorization p_prime n_ne_0
+      have : emultiplicity p n = multiplicity p n := sorry
+      sorry
   exact this
 
 theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
