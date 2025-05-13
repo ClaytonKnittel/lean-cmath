@@ -93,20 +93,20 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   have : ConsecutiveFactors n (p ^ e) (p ^ (e + 1)) := by
     refine ⟨p_e_dvd_n, p_e_succ_dvd_n, Nat.pow_lt_pow_succ p_prime.one_lt, ?_⟩
     by_contra h
-    obtain ⟨c, hc⟩ := h
+    obtain ⟨c, c_dvd_n, c_gt_n_e, c_lt_n_e_plus1⟩ := h
     -- If there exists a factor between p ^ e and p ^ (e + 1), it must have a
     -- prime factor `r ≠ p`
     obtain ⟨r, r_ne_p, r_prime, r_dvd_c⟩ :=
-      not_pow_cons_factors_other_prime p_prime hc
+      not_pow_cons_factors_other_prime p_prime ⟨c_dvd_n, c_gt_n_e, c_lt_n_e_plus1⟩
 
     have c_ne_zero : 0 < c :=
-      (Nat.pow_pos p_prime.pos).trans hc.right.left
+      Nat.pos_of_dvd_of_pos c_dvd_n (Nat.lt_of_succ_lt hn)
     have r_le_c : r ≤ c := Nat.le_of_dvd c_ne_zero r_dvd_c
     have r_lt_q : r < q :=
-      Nat.lt_of_le_of_lt r_le_c (hc.right.right.trans p_e_plus1_lt_q)
+      Nat.lt_of_le_of_lt r_le_c (c_lt_n_e_plus1.trans p_e_plus1_lt_q)
 
     exact r_ne_p
-      (p_q_min_primes ⟨r, r_lt_q, r_prime, Nat.dvd_trans r_dvd_c hc.left⟩)
+      (p_q_min_primes ⟨r, r_lt_q, r_prime, Nat.dvd_trans r_dvd_c c_dvd_n⟩)
   refine ⟨this, ?_⟩
 
   have : ConsecutiveFactors n (p ^ (e + 1)) q := sorry
