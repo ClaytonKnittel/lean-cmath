@@ -20,8 +20,9 @@ theorem p_succ_fact_zero {p : ℕ} (hp : p.Prime)
 def ConsecutiveFactors (n a b : ℕ) :=
   a ∣ n ∧ b ∣ n ∧ a < b ∧ ¬∃ c, (c ∣ n ∧ a < c ∧ c < b)
 
-theorem not_pow_cons_factors_other_prime {n p e : ℕ} (hp : p.Prime)
-    : (∃ c, c ∣ n ∧ (p ^ e) < c ∧ c < (p ^ (e + 1))) → ∃ q ≠ p, q.Prime ∧ q ∣ n :=
+theorem not_pow_cons_factors_other_prime {n p e c : ℕ} (hp : p.Prime)
+    (hc : c ∣ n ∧ (p ^ e) < c ∧ c < (p ^ (e + 1)))
+    : ∃ q ≠ p, q.Prime ∧ q ∣ c :=
   sorry
 
 theorem inv_cons_factors {n a b x y : ℕ} (hn : 0 < n) (ha : n = a * x)
@@ -59,7 +60,7 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   let c := ordCompl[p] n
   have : 1 < c := by sorry
   let q := c.minFac
-  have q_prime := c.minFac_prime (Nat.ne_of_lt this).symm
+  have q_prime : q.Prime := c.minFac_prime (Nat.ne_of_lt this).symm
   -- use Nat.le_minFac
   have p_lt_q : p < q := by sorry
 
@@ -79,38 +80,37 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
     sorry
 
   have {e : ℕ} : e ≤ n.factorization p → p ^ e ∣ n :=
-    (Nat.Prime.factorization_pow p_prime ▸
-      (Nat.factorization_le_iff_dvd
-        (pow_ne_zero e p_prime.ne_zero)
-        (Nat.ne_zero_of_lt hn)).mp)
-    ∘ Finsupp.single_le_iff.mpr
+    Nat.multiplicity_eq_factorization p_prime (Nat.ne_zero_of_lt hn)
+      ▸ pow_dvd_of_le_multiplicity
 
   have p_e_dvd_n : p ^ e ∣ n :=
     (he ▸ this ∘ Nat.le_of_add_right_le) (Nat.min_le_left _ _)
   have p_e_succ_dvd_n : p ^ (e + 1) ∣ n :=
     he ▸ this (Nat.min_le_left _ _)
 
-  have c₁ : ConsecutiveFactors n (p ^ e) (p ^ (e + 1)) := by
+  have p_q_min_primes {r : ℕ} : (∃ r < q, r.Prime ∧ r ∣ n) → r = p := by sorry
+
+  have : ConsecutiveFactors n (p ^ e) (p ^ (e + 1)) := by
     refine ⟨p_e_dvd_n, p_e_succ_dvd_n, Nat.pow_lt_pow_succ p_prime.one_lt, ?_⟩
     by_contra h
-    obtain ⟨r, r_ne_p, r_prime, r_dvd_n⟩ :=
-      not_pow_cons_factors_other_prime p_prime h
-    obtain ⟨c, c_dvd_n, c_gt_p_e, c_lt_p_e_plus1⟩ := h
+    obtain ⟨c, hc⟩ := h
+    -- If there exists a factor between p ^ e and p ^ (e + 1), it must have a
+    -- prime factor `r ≠ p`
+    obtain ⟨r, r_ne_p, r_prime, r_dvd_c⟩ :=
+      not_pow_cons_factors_other_prime p_prime hc
 
-    have r_dvd_c : r ∣ c := by sorry
-
-    have r_le_c : r ≤ c := by sorry
+    have c_ne_zero : 0 < c :=
+      (Nat.pow_pos p_prime.pos).trans hc.right.left
+    have r_le_c : r ≤ c := Nat.le_of_dvd c_ne_zero r_dvd_c
     have r_lt_q : r < q :=
-      Nat.lt_of_le_of_lt r_le_c
-        (Nat.lt_trans c_lt_p_e_plus1 p_e_plus1_lt_q)
+      Nat.lt_of_le_of_lt r_le_c (hc.right.right.trans p_e_plus1_lt_q)
 
-    -- have r_dvd_n : r ∣ n := Nat.dvd_trans r_dvd_c c_dvd_n
-    apply Nat.not_lt.mpr (Nat.minFac_le_of_dvd r_prime.one_lt r_dvd_c)
-    -- exact r_lt_q
-    sorry
-  have c₂ : ConsecutiveFactors n (p ^ (e + 1)) q := sorry
+    exact r_ne_p
+      (p_q_min_primes ⟨r, r_lt_q, r_prime, Nat.dvd_trans r_dvd_c hc.left⟩)
+  refine ⟨this, ?_⟩
 
-  exact ⟨c₁, c₂⟩
+  have : ConsecutiveFactors n (p ^ (e + 1)) q := sorry
+  exact this
 
 def Dividable (n : ℕ) :=
   ∀ {a b c : ℕ},
