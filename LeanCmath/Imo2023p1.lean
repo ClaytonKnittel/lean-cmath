@@ -8,6 +8,9 @@ import Mathlib.Tactic.ApplyFun
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 
+lemma dvd_ne_zero {a b : ℕ} (hb : b ≠ 0) (h : a ∣ b) : 0 < a :=
+  Nat.zero_lt_of_ne_zero (fun ha => hb (zero_dvd_iff.mp (ha ▸ h)))
+
 lemma mul_cmp_compl {a b x y : ℕ} (hab : a < b) (hy : 0 < y)
     (h : a * x = b * y) : y < x :=
   Nat.lt_of_mul_lt_mul_left
@@ -38,6 +41,7 @@ theorem not_pow_cons_factors_other_prime {p e c : ℕ} (hp : p.Prime)
     . rw [hq, Finsupp.single_eq_same]
     . rw [Finsupp.single_eq_of_ne (hq ∘ Eq.symm)]
       exact this hq
+
   obtain ⟨c_e, hf⟩ := this
 
   let c_is_pow_p :=
@@ -118,28 +122,55 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
       (r_lt_q : r < q) (r_dvd_n : r ∣ n)
       : r = p :=
     sorry
-  have lt_q_pow_p {x : ℕ} (x_lt_q : x < q) (x_dvd_n : x ∣ n)
-      : ∃ e, x.factorization = Finsupp.single p e :=
-    sorry
-  have lt_q_pow_p' {x : ℕ} (x_lt_q : x < q) (x_dvd_n : x ∣ n)
-      : ∃ e, x = p ^ e := by
-    let ⟨e, he⟩ := lt_q_pow_p x_lt_q x_dvd_n
-    let x2 := Nat.Prime.factorization_pow p_prime ▸ he
-    sorry
-    -- exact
-    --   Nat.eq_of_factorization_eq
-    --     _ _
-    --     (Nat.Prime.factorization_pow p_prime ▸ he)
 
   have : ConsecutiveFactors n (p ^ e) (p ^ (e + 1)) := by
     refine ⟨p_e_dvd_n, p_e_succ_dvd_n, Nat.pow_lt_pow_succ p_prime.one_lt, ?_⟩
     by_contra h
     obtain ⟨d, d_dvd_n, d_gt_p_e, d_lt_p_e_plus1⟩ := h
+
     let ⟨r, r_ne_p, r_prime, r_dvd_d⟩ :=
       not_pow_cons_factors_other_prime p_prime d_gt_p_e d_lt_p_e_plus1
-    have : r < q := sorry
-    exact r_ne_p (p_only_fac_lt_q r_prime this (r_dvd_d.trans d_dvd_n))
+
+    have r_lt_q : r < q := by
+      exact
+        (Nat.lt_of_le_of_lt
+          (Nat.le_of_dvd (dvd_ne_zero n_ne_0 d_dvd_n) r_dvd_d)
+          d_lt_p_e_plus1
+        ).trans p_e_plus1_lt_q
+
+    exact r_ne_p (p_only_fac_lt_q r_prime r_lt_q (r_dvd_d.trans d_dvd_n))
   refine ⟨this, ?_⟩
+
+  have lt_q_pow_p {x : ℕ} (x_lt_q : x < q) (x_dvd_n : x ∣ n)
+      : ∃ e, x.factorization = Finsupp.single p e := by
+    exists x.factorization p
+    apply Finsupp.ext
+    intro r
+    by_cases hr : r = p
+    . rw [hr, Finsupp.single_eq_same]
+    . rw [Finsupp.single_eq_of_ne]
+      by_cases hr₂ : r.Prime ∧ r ∣ x
+      . obtain ⟨r_prime, r_dvd_x⟩ := hr₂
+        exact False.elim
+          (hr
+            (p_only_fac_lt_q
+              r_prime
+              (Nat.lt_of_le_of_lt
+                (Nat.le_of_dvd (dvd_ne_zero n_ne_0 x_dvd_n) r_dvd_x)
+                x_lt_q)
+              (r_dvd_x.trans x_dvd_n)))
+      . exact match Decidable.not_and_iff_not_or_not.mp hr₂ with
+        | .inl not_prime => Nat.factorization_eq_zero_of_non_prime x not_prime
+        | .inr not_dvd_x => Nat.factorization_eq_zero_of_not_dvd not_dvd_x
+      . exact hr ∘ Eq.symm
+  have lt_q_pow_p' {x : ℕ} (x_lt_q : x < q) (x_dvd_n : x ∣ n)
+      : ∃ e, x = p ^ e := by
+    let ⟨e, he⟩ := lt_q_pow_p x_lt_q x_dvd_n
+    exists e
+    exact Nat.eq_of_factorization_eq
+      (dvd_ne_zero n_ne_0 x_dvd_n).ne.symm
+      (Nat.pow_pos (Nat.zero_lt_of_ne_zero p_prime.ne_zero)).ne.symm
+      fun q => (congrArg (· q) (Nat.Prime.factorization_pow p_prime ▸ he))
 
   have : ConsecutiveFactors n (p ^ (e + 1)) q := by
     refine ⟨
@@ -150,14 +181,16 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
       ⟩
     by_contra h
     obtain ⟨d, d_dvd_n, d_gt_p_e_plus1, d_lt_q⟩ := h
-    let ⟨d_e, he⟩ := lt_q_pow_p d_lt_q d_dvd_n
-    have : d_e > e + 1 := sorry
-    let xx :=
-      Nat.Prime.factorization_pow p_prime ▸
-        (Nat.factorization_le_iff_dvd
-          (pow_ne_zero d_e p_prime.ne_zero)
-          n_ne_0).mpr
-        -- d_dvd_n
+    let ⟨d_e, hd_e⟩ := lt_q_pow_p' d_lt_q d_dvd_n
+    have : d_e > e_plus1 := sorry
+    have xx : d_e ≤ n.factorization p :=
+      (Finsupp.single_eq_same : _ = d_e) ▸
+        (Nat.Prime.factorization_pow p_prime ▸
+          (Nat.factorization_le_iff_dvd
+            (pow_ne_zero d_e p_prime.ne_zero)
+            n_ne_0).mpr
+          (hd_e ▸ d_dvd_n)
+          p)
     sorry
   exact this
 
