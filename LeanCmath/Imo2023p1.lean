@@ -1,6 +1,7 @@
 import Mathlib.Algebra.IsPrimePow
 import Mathlib.Data.Nat.Log
 import Mathlib.Data.Nat.Prime.Defs
+import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Factorization.Defs
 import Mathlib.Data.Nat.Factors
 import Mathlib.Tactic.ApplyFun
@@ -20,10 +21,36 @@ theorem p_succ_fact_zero {p : ℕ} (hp : p.Prime)
 def ConsecutiveFactors (n a b : ℕ) :=
   a ∣ n ∧ b ∣ n ∧ a < b ∧ ¬∃ c, (c ∣ n ∧ a < c ∧ c < b)
 
-theorem not_pow_cons_factors_other_prime {n p e c : ℕ} (hp : p.Prime)
-    (c_dvd_n : c ∣ n) (c_gt_e : c > p ^ e) (c_lt_p_e_plus1 : c < p ^ (e + 1))
-    : ∃ q ≠ p, q.Prime ∧ q ∣ c :=
-  sorry
+theorem not_pow_cons_factors_other_prime {p e c : ℕ} (hp : p.Prime)
+    (c_gt_e : c > p ^ e) (c_lt_p_e_plus1 : c < p ^ (e + 1))
+    : ∃ q ≠ p, q.Prime ∧ q ∣ c := by
+  by_contra h
+  have : ∃ c_e, c.factorization = Finsupp.single p c_e := by
+    have {q : ℕ} (q_ne_p : q ≠ p) : c.factorization q = 0 := by
+      refine Or.elim (em q.Prime) ?_ (Nat.factorization_eq_zero_of_non_prime c ·)
+      intro q_prime
+      by_contra h₂
+      exact h ⟨q, q_ne_p, q_prime, Nat.dvd_of_factorization_pos h₂⟩
+    exists c.factorization p
+    apply Finsupp.ext
+    intro q
+    by_cases hq : q = p
+    . rw [hq, Finsupp.single_eq_same]
+    . rw [Finsupp.single_eq_of_ne (hq ∘ Eq.symm)]
+      exact this hq
+  obtain ⟨c_e, hf⟩ := this
+
+  let c_is_pow_p :=
+    Nat.eq_of_factorization_eq
+      (Nat.ne_zero_of_lt c_gt_e)
+      (pow_ne_zero c_e hp.ne_zero)
+      fun p => (congrArg (· p) (Nat.Prime.factorization_pow hp ▸ hf))
+
+  have gt_e : c_e ≥ e + 1 :=
+    (Nat.pow_lt_pow_iff_right hp.one_lt).mp (c_is_pow_p ▸ c_gt_e)
+  have lt_e_plus1 : c_e < e + 1 :=
+    (Nat.pow_lt_pow_iff_right hp.one_lt).mp (c_is_pow_p ▸ c_lt_p_e_plus1)
+  exact Nat.le_lt_asymm gt_e lt_e_plus1
 
 theorem inv_cons_factors {n a b x y : ℕ} (hn : 0 < n) (ha : n = a * x)
     (hb : n = b * y) (h : ConsecutiveFactors n a b)
@@ -49,11 +76,13 @@ theorem inv_cons_factors {n a b x y : ℕ} (hn : 0 < n) (ha : n = a * x)
     mul_cmp_compl y_lt_c (div_n_ne_0 hc) (hc ▸ hb.symm)
   ⟩
 
-theorem minFac_cons_factor' {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
+theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
     : ∃ q e,
       q.Prime ∧ q ≠ n.minFac ∧
       ConsecutiveFactors n (n.minFac ^ e) (n.minFac ^ (e + 1)) ∧
       ConsecutiveFactors n (n.minFac ^ (e + 1)) q := by
+  have n_ne_0 := Nat.ne_zero_of_lt hn
+
   let p := n.minFac
   have p_prime : p.Prime := n.minFac_prime (Nat.ne_of_lt hn).symm
 
@@ -68,7 +97,7 @@ theorem minFac_cons_factor' {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   have : 0 < e_plus1 :=
     lt_min
       (p_prime.factorization_pos_of_dvd
-        (Nat.ne_zero_of_lt hn)
+        n_ne_0
         (Nat.minFac_dvd n))
       (by simp [p_lt_q.le, p_prime.one_lt])
   let ⟨e, he⟩ := Nat.exists_add_one_eq.mpr this
@@ -77,7 +106,7 @@ theorem minFac_cons_factor' {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   refine ⟨q_prime, (Nat.ne_of_lt p_lt_q).symm, ?_⟩
 
   have {e : ℕ} : e ≤ n.factorization p → p ^ e ∣ n :=
-    Nat.multiplicity_eq_factorization p_prime (Nat.ne_zero_of_lt hn)
+    Nat.multiplicity_eq_factorization p_prime n_ne_0
       ▸ pow_dvd_of_le_multiplicity
   have p_e_dvd_n : p ^ e ∣ n :=
     (he ▸ this ∘ Nat.le_of_add_right_le) (Nat.min_le_left _ _)
@@ -89,18 +118,47 @@ theorem minFac_cons_factor' {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
       (r_lt_q : r < q) (r_dvd_n : r ∣ n)
       : r = p :=
     sorry
+  have lt_q_pow_p {x : ℕ} (x_lt_q : x < q) (x_dvd_n : x ∣ n)
+      : ∃ e, x.factorization = Finsupp.single p e :=
+    sorry
+  have lt_q_pow_p' {x : ℕ} (x_lt_q : x < q) (x_dvd_n : x ∣ n)
+      : ∃ e, x = p ^ e := by
+    let ⟨e, he⟩ := lt_q_pow_p x_lt_q x_dvd_n
+    let x2 := Nat.Prime.factorization_pow p_prime ▸ he
+    sorry
+    -- exact
+    --   Nat.eq_of_factorization_eq
+    --     _ _
+    --     (Nat.Prime.factorization_pow p_prime ▸ he)
 
   have : ConsecutiveFactors n (p ^ e) (p ^ (e + 1)) := by
     refine ⟨p_e_dvd_n, p_e_succ_dvd_n, Nat.pow_lt_pow_succ p_prime.one_lt, ?_⟩
     by_contra h
     obtain ⟨d, d_dvd_n, d_gt_p_e, d_lt_p_e_plus1⟩ := h
     let ⟨r, r_ne_p, r_prime, r_dvd_d⟩ :=
-      not_pow_cons_factors_other_prime p_prime d_dvd_n d_gt_p_e d_lt_p_e_plus1
+      not_pow_cons_factors_other_prime p_prime d_gt_p_e d_lt_p_e_plus1
     have : r < q := sorry
     exact r_ne_p (p_only_fac_lt_q r_prime this (r_dvd_d.trans d_dvd_n))
   refine ⟨this, ?_⟩
 
-  have : ConsecutiveFactors n (p ^ (e + 1)) q := sorry
+  have : ConsecutiveFactors n (p ^ (e + 1)) q := by
+    refine ⟨
+        p_e_succ_dvd_n,
+        c.minFac_dvd.trans (Nat.ordCompl_dvd n p),
+        p_e_plus1_lt_q,
+        ?_
+      ⟩
+    by_contra h
+    obtain ⟨d, d_dvd_n, d_gt_p_e_plus1, d_lt_q⟩ := h
+    let ⟨d_e, he⟩ := lt_q_pow_p d_lt_q d_dvd_n
+    have : d_e > e + 1 := sorry
+    let xx :=
+      Nat.Prime.factorization_pow p_prime ▸
+        (Nat.factorization_le_iff_dvd
+          (pow_ne_zero d_e p_prime.ne_zero)
+          n_ne_0).mpr
+        -- d_dvd_n
+    sorry
   exact this
 
 def Dividable (n : ℕ) :=
