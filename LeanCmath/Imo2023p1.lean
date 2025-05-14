@@ -11,6 +11,18 @@ import Mathlib.Tactic.Linarith
 
 open FiniteMultiplicity
 
+lemma PrimePow_ne {a b p q : ℕ} (p_prime : p.Prime) (q_prime : q.Prime) (p_ne_q : p ≠ q)
+    (ha : ∃ k > 0, p ^ k = a) (hb : ∃ k > 0, q ^ k = b)
+    : a ≠ b := by
+  -- let f1 := congrArg (Nat.factorization ·) h
+  -- dsimp at f1
+  -- rw [Nat.Prime.factorization_pow p_prime,
+  --     Nat.Prime.factorization q_prime] at f1
+  -- let x :=
+  --   (Nat.eq_of_factorization_eq _ q_prime.ne_zero) ∘
+  --     (Finsupp.single_eq_single_iff p q e_succ 1).mpr
+  exact sorry
+
 lemma dvd_ne_zero {a b : ℕ} (hb : b ≠ 0) (h : a ∣ b) : 0 < a :=
   Nat.zero_lt_of_ne_zero (fun ha => hb (zero_dvd_iff.mp (ha ▸ h)))
 
@@ -116,13 +128,13 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   have p_lt_q : p < q := by sorry
 
   let e_succ := min (n.factorization p) (p.log q)
-  have : 0 < e_succ :=
+  have e_succ_ne_0 : 0 < e_succ :=
     lt_min
       (p_prime.factorization_pos_of_dvd
         n_ne_0
         (Nat.minFac_dvd n))
       (by simp [p_lt_q.le, p_prime.one_lt])
-  let ⟨e, he⟩ := Nat.exists_add_one_eq.mpr this
+  let ⟨e, he⟩ := Nat.exists_add_one_eq.mpr e_succ_ne_0
 
   exists q, e
   refine ⟨q_prime, (Nat.ne_of_lt p_lt_q).symm, ?_⟩
@@ -135,7 +147,18 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   have p_e_succ_dvd_n : p ^ (e + 1) ∣ n :=
     he ▸ this (Nat.min_le_left _ _)
 
-  have p_e_succ_lt_q : p ^ (e + 1) < q := sorry
+  have p_e_succ_lt_q : p ^ (e + 1) < q := by
+    let p_e_succ_le_q :=
+      (Nat.pow_le_of_le_log q_prime.ne_zero)
+        (min_le_right (n.factorization p) (p.log q))
+    have p_e_succ_ne_q : p ^ e_succ ≠ q :=
+      PrimePow_ne
+        p_prime
+        q_prime
+        p_lt_q.ne
+        ⟨e_succ, e_succ_ne_0, rfl⟩
+        ⟨1, Nat.zero_lt_one, Nat.pow_one q⟩
+    exact he ▸ Nat.lt_of_le_of_ne p_e_succ_le_q p_e_succ_ne_q
 
   have p_unique {r : ℕ} (r_lt_q : r < q) (r_ne_p : r ≠ p) : n.factorization r = 0 := by
     let c_n_fact_eq : c.factorization r = n.factorization r :=
