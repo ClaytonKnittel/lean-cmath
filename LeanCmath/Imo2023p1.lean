@@ -173,7 +173,24 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
     by_contra h
     obtain ⟨d, d_dvd_n, d_gt_p_e_succ, d_lt_q⟩ := h
 
-    have : ∃ d_e, d.factorization = Finsupp.single p d_e := sorry
+    have d_fact_lt_n : d.factorization ≤ n.factorization :=
+      (Nat.factorization_le_iff_dvd
+        (dvd_ne_zero n_ne_0 d_dvd_n).ne.symm
+        n_ne_0).mpr d_dvd_n
+
+    have : ∃ d_e, d.factorization = Finsupp.single p d_e := by
+      exists d.factorization p
+      exact
+        Finsupp.ext
+          fun r => by
+            if hr : r = p then
+              rw [hr, Finsupp.single_eq_same]
+            else
+              rw [Finsupp.single_eq_of_ne (hr ∘ Eq.symm)]
+              exact if r_ge_q : r ≥ q then
+                Nat.factorization_eq_zero_of_lt (Nat.lt_of_lt_of_le d_lt_q r_ge_q)
+              else
+                Nat.le_zero.mp (p_unique (Nat.lt_of_not_ge r_ge_q) hr ▸ d_fact_lt_n r)
     obtain ⟨d_e, hd_e⟩ := this
 
     have d_eq_p_e :=
@@ -181,11 +198,8 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
         (Nat.ne_of_lt (dvd_ne_zero n_ne_0 d_dvd_n)).symm
         (Nat.pow_pos (Nat.zero_lt_of_ne_zero p_prime.ne_zero)).ne.symm
         fun r => congrArg (· r) (Nat.Prime.factorization_pow p_prime ▸ hd_e)
-    have d_e_gt_e_succ : d_e > e_succ := sorry
-    have d_ne_0 :=
-      d_eq_p_e ▸ (Nat.pow_pos (Nat.zero_lt_of_ne_zero p_prime.ne_zero)).ne.symm
-    have d_fact_lt_n : d.factorization ≤ n.factorization :=
-      (Nat.factorization_le_iff_dvd d_ne_0 n_ne_0).mpr d_dvd_n
+    have d_e_gt_e_succ : d_e > e_succ :=
+      he ▸ (Nat.pow_lt_pow_iff_right p_prime.one_lt).mp (d_eq_p_e ▸ d_gt_p_e_succ)
 
     by_cases he_min : n.factorization p < p.log q
     . -- show d_e > n.factorization p
