@@ -14,14 +14,22 @@ open FiniteMultiplicity
 lemma PrimePow_ne {a b p q : ℕ} (p_prime : p.Prime) (q_prime : q.Prime) (p_ne_q : p ≠ q)
     (ha : ∃ k > 0, p ^ k = a) (hb : ∃ k > 0, q ^ k = b)
     : a ≠ b := by
-  -- let f1 := congrArg (Nat.factorization ·) h
-  -- dsimp at f1
-  -- rw [Nat.Prime.factorization_pow p_prime,
-  --     Nat.Prime.factorization q_prime] at f1
-  -- let x :=
-  --   (Nat.eq_of_factorization_eq _ q_prime.ne_zero) ∘
-  --     (Finsupp.single_eq_single_iff p q e_succ 1).mpr
-  exact sorry
+  obtain ⟨a_k, a_k_ne_0, ha⟩ := ha
+  obtain ⟨b_k, b_k_ne_0, hb⟩ := hb
+  have a_ne_0 := ha ▸ (Nat.pow_pos (Nat.pos_of_ne_zero p_prime.ne_zero)).ne.symm
+  have b_ne_0 := hb ▸ (Nat.pow_pos (Nat.pos_of_ne_zero q_prime.ne_zero)).ne.symm
+  let fa := Nat.Prime.factorization_pow p_prime ▸ congrArg Nat.factorization ha
+  let fb := Nat.Prime.factorization_pow q_prime ▸ congrArg Nat.factorization hb
+
+  by_contra a_eq_b
+  have :=
+    (fa ▸ fb ▸ (Finsupp.single_eq_single_iff p q a_k b_k).mp)
+      (congrArg Nat.factorization a_eq_b)
+  exact
+    not_or_intro
+      (not_and.mpr fun p_eq_q _ => p_ne_q p_eq_q)
+      (not_and.mpr fun a_k_eq_0 _ => a_k_ne_0.ne.symm a_k_eq_0)
+      this
 
 lemma dvd_ne_zero {a b : ℕ} (hb : b ≠ 0) (h : a ∣ b) : 0 < a :=
   Nat.zero_lt_of_ne_zero (fun ha => hb (zero_dvd_iff.mp (ha ▸ h)))
