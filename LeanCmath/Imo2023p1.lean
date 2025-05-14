@@ -129,11 +129,46 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   have p_prime : p.Prime := n.minFac_prime (Nat.ne_of_lt hn).symm
 
   let c := ordCompl[p] n
-  have : 1 < c := by sorry
+  have c_gt_one : 1 < c := by sorry
+  have c_dvd_n := Nat.ordCompl_dvd n p
   let q := c.minFac
-  have q_prime : q.Prime := c.minFac_prime (Nat.ne_of_lt this).symm
-  -- use Nat.le_minFac
-  have p_lt_q : p < q := by sorry
+  have q_prime : q.Prime := c.minFac_prime (Nat.ne_of_lt c_gt_one).symm
+
+  have p_unique {r : ℕ} (r_lt_q : r < q) (r_ne_p : r ≠ p) : n.factorization r = 0 := by
+    let c_n_fact_eq : c.factorization r = n.factorization r :=
+      (Finsupp.erase_ne r_ne_p : _ = n.factorization r) ▸
+        (congrArg (· r) (Nat.factorization_ordCompl n p))
+    have : c.factorization r = 0 := by
+      by_contra h
+      exact
+        Nat.le_lt_asymm
+          (Nat.minFac_le_of_dvd
+            (Nat.succ_le_of_lt (factorization_prime h).one_lt)
+            (Nat.dvd_of_factorization_pos h))
+          r_lt_q
+    exact c_n_fact_eq ▸ this
+
+  have p_lt_q : p < q := by
+    have q_dvd_c : q ∣ c := Nat.minFac_dvd c
+    have q_dvd_n : q ∣ n := Nat.dvd_trans q_dvd_c c_dvd_n
+    have c_fact_q : c.factorization q ≠ 0 := by
+      by_contra h
+      exact
+        Or.elim
+          ((Nat.factorization_eq_zero_iff _ _).mp h)
+          (· q_prime)
+          (Or.elim · (· q_dvd_c) (Nat.ne_zero_of_lt c_gt_one ·))
+    have : p ≠ q := by
+      let c_fact_def := congrArg (· q) (Nat.factorization_ordCompl n p)
+      by_contra h
+      have : (n / p ^ n.factorization p).factorization q = (Finsupp.erase p n.factorization) p := by
+        exact h ▸ c_fact_def
+      exact c_fact_q ((Finsupp.erase_same : _ = 0) ▸ this)
+    have p_le_q : p ≤ q := Nat.minFac_le_of_dvd q_prime.one_lt q_dvd_n
+    exact
+      Nat.lt_of_le_of_ne
+        (Nat.minFac_le_of_dvd q_prime.one_lt q_dvd_n)
+        this
 
   let e_succ := min (n.factorization p) (p.log q)
   have e_succ_ne_0 : 0 < e_succ :=
@@ -168,20 +203,6 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
         ⟨1, Nat.zero_lt_one, Nat.pow_one q⟩
     exact he ▸ Nat.lt_of_le_of_ne p_e_succ_le_q p_e_succ_ne_q
 
-  have p_unique {r : ℕ} (r_lt_q : r < q) (r_ne_p : r ≠ p) : n.factorization r = 0 := by
-    let c_n_fact_eq : c.factorization r = n.factorization r :=
-      (Finsupp.erase_ne r_ne_p : _ = n.factorization r) ▸
-        (congrArg (· r) (Nat.factorization_ordCompl n p))
-    have : c.factorization r = 0 := by
-      by_contra h
-      exact
-        Nat.le_lt_asymm
-          (Nat.minFac_le_of_dvd
-            (Nat.succ_le_of_lt (factorization_prime h).one_lt)
-            (Nat.dvd_of_factorization_pos h))
-          r_lt_q
-    exact c_n_fact_eq ▸ this
-
   have : ConsecutiveFactors n (p ^ e) (p ^ (e + 1)) := by
     refine ⟨p_e_dvd_n, p_e_succ_dvd_n, Nat.pow_lt_pow_succ p_prime.one_lt, ?_⟩
     by_contra hd
@@ -199,8 +220,7 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   refine ⟨this, ?_⟩
 
   have : ConsecutiveFactors n (p ^ (e + 1)) q := by
-    have q_dvd_n := c.minFac_dvd.trans (Nat.ordCompl_dvd n p)
-    refine ⟨p_e_succ_dvd_n, q_dvd_n, p_e_succ_lt_q, ?_⟩
+    refine ⟨p_e_succ_dvd_n, c.minFac_dvd.trans c_dvd_n, p_e_succ_lt_q, ?_⟩
     by_contra h
     obtain ⟨d, d_dvd_n, d_gt_p_e_succ, d_lt_q⟩ := h
 
