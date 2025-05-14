@@ -194,8 +194,13 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
           ((Finsupp.single_eq_same : _ = d_e) ▸ (hd_e ▸ d_fact_lt_n) p)
           ((min_eq_left he_min.le) ▸ d_e_gt_e_succ)
     . -- show p ^ d_e > q
-      let d_e_eq_log := min_eq_right (Nat.ge_of_not_lt he_min)
-      sorry
+      have : d_e ≥ (p.log q).succ :=
+        (min_eq_right (Nat.ge_of_not_lt he_min)) ▸ d_e_gt_e_succ
+      let q_lt_d :=
+        Nat.lt_of_lt_of_le
+          (Nat.lt_pow_succ_log_self p_prime.one_lt q)
+          ((Nat.pow_le_pow_iff_right p_prime.one_lt).mpr this)
+      exact Nat.lt_le_asymm d_lt_q (d_eq_p_e ▸ q_lt_d.le)
   exact this
 
 def Dividable (n : ℕ) :=
