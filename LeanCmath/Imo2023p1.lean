@@ -182,19 +182,17 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
         (Nat.pow_pos (Nat.zero_lt_of_ne_zero p_prime.ne_zero)).ne.symm
         fun r => congrArg (· r) (Nat.Prime.factorization_pow p_prime ▸ hd_e)
     have d_e_gt_e_succ : d_e > e_succ := sorry
+    have d_ne_0 :=
+      d_eq_p_e ▸ (Nat.pow_pos (Nat.zero_lt_of_ne_zero p_prime.ne_zero)).ne.symm
+    have d_fact_lt_n : d.factorization ≤ n.factorization :=
+      (Nat.factorization_le_iff_dvd d_ne_0 n_ne_0).mpr d_dvd_n
 
     by_cases he_min : n.factorization p < p.log q
     . -- show d_e > n.factorization p
-      let d_e_eq_fact := min_eq_left he_min.le
-      dsimp only [e_succ] at d_e_gt_e_succ
-      let qy := d_e_eq_fact ▸ d_e_gt_e_succ
-
-      -- let xx := (multiplicity_lt_iff_not_dvd _).mp this
-      let xx := pow_dvd_iff_le_emultiplicity.mp (d_eq_p_e ▸ d_dvd_n)
-      have : multiplicity p n = n.factorization p :=
-        Nat.multiplicity_eq_factorization p_prime n_ne_0
-      have : emultiplicity p n = multiplicity p n := sorry
-      sorry
+      exact
+        Nat.le_lt_asymm
+          ((Finsupp.single_eq_same : _ = d_e) ▸ (hd_e ▸ d_fact_lt_n) p)
+          ((min_eq_left he_min.le) ▸ d_e_gt_e_succ)
     . -- show p ^ d_e > q
       let d_e_eq_log := min_eq_right (Nat.ge_of_not_lt he_min)
       sorry
