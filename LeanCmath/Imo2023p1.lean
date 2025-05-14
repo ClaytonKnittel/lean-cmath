@@ -11,6 +11,8 @@ import Mathlib.Tactic.Linarith
 
 open FiniteMultiplicity
 
+namespace Imo2023P1
+
 lemma PrimePow_ne {a b p q : ℕ} (p_prime : p.Prime) (q_prime : q.Prime) (p_ne_q : p ≠ q)
     (ha : ∃ k > 0, p ^ k = a) (hb : ∃ k > 0, q ^ k = b)
     : a ≠ b := by
@@ -402,5 +404,5 @@ lemma dividable_is_pp {n : ℕ} (n_gt_1 : n > 1) : Dividable n → IsPrimePow n 
         (Nat.mul_ne_zero q_prime.ne_zero p.succ_ne_zero)
     ).mpr h p
 
-theorem P1 : ∀ n > 1, IsPrimePow n ↔ Dividable n :=
+theorem imo2023_p1 : ∀ n > 1, IsPrimePow n ↔ Dividable n :=
   fun _ h => ⟨pp_is_dividable, dividable_is_pp h⟩
