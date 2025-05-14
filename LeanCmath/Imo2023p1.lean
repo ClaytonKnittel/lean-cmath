@@ -129,15 +129,45 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
   have p_prime : p.Prime := n.minFac_prime (Nat.ne_of_lt hn).symm
 
   let c := ordCompl[p] n
-  have c_gt_one : 1 < c := by sorry
+  have c_fact_def := fun r => congrArg (· r) (Nat.factorization_ordCompl n p)
   have c_dvd_n := Nat.ordCompl_dvd n p
+  have c_gt_one : 1 < c := by
+    by_contra hc
+    have c_ne_0 : c ≠ 0 := (dvd_ne_zero n_ne_0 c_dvd_n).ne.symm
+    have c_fact_eq_0 : ∀ q, c.factorization q = 0 :=
+      Or.elim
+        (Nat.le_one_iff_eq_zero_or_eq_one.mp (Nat.le_of_not_lt hc))
+        (False.elim ∘ c_ne_0)
+        (· ▸ (fun q => congrArg (· q) Nat.factorization_one))
+    have n_fact_p_ne_0 : n.factorization p ≠ 0 := by
+      by_contra eq_0
+      have := (Nat.factorization_eq_zero_iff n p).mp eq_0
+      exact n_ne_0
+        ((this.resolve_left (not_not_intro p_prime)).resolve_left
+          (not_not_intro (Nat.minFac_dvd n)))
+
+    have : ∀ q, n.factorization q = Finsupp.single p (n.factorization p) q := by
+      intro q
+      if h : q = p then
+        rw [h, Finsupp.single_eq_same]
+      else
+        let c_fact_q := c_fact_def q
+        rw [Finsupp.erase_ne h] at c_fact_q
+        rw [← c_fact_q, Finsupp.single_eq_of_ne (Ne.symm h)]
+        exact c_fact_eq_0 q
+    let n_eq_p_pow :=
+      Nat.eq_of_factorization_eq
+        n_ne_0
+        (pow_ne_zero _ p_prime.ne_zero)
+        (Nat.Prime.factorization_pow p_prime ▸ this)
+
+    have : IsPrimePow n :=
+      ⟨p, _, p_prime.prime, Nat.zero_lt_of_ne_zero n_fact_p_ne_0, n_eq_p_pow.symm⟩
+    exact h this
   let q := c.minFac
   have q_prime : q.Prime := c.minFac_prime (Nat.ne_of_lt c_gt_one).symm
 
   have p_unique {r : ℕ} (r_lt_q : r < q) (r_ne_p : r ≠ p) : n.factorization r = 0 := by
-    let c_n_fact_eq : c.factorization r = n.factorization r :=
-      (Finsupp.erase_ne r_ne_p : _ = n.factorization r) ▸
-        (congrArg (· r) (Nat.factorization_ordCompl n p))
     have : c.factorization r = 0 := by
       by_contra h
       exact
@@ -146,6 +176,8 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
             (Nat.succ_le_of_lt (factorization_prime h).one_lt)
             (Nat.dvd_of_factorization_pos h))
           r_lt_q
+    let c_n_fact_eq : c.factorization r = n.factorization r :=
+      (Finsupp.erase_ne r_ne_p : _ = n.factorization r) ▸ c_fact_def r
     exact c_n_fact_eq ▸ this
 
   have p_lt_q : p < q := by
@@ -159,10 +191,9 @@ theorem minFac_cons_factor {n : ℕ} (hn : 1 < n) (h : ¬IsPrimePow n)
           (· q_prime)
           (Or.elim · (· q_dvd_c) (Nat.ne_zero_of_lt c_gt_one ·))
     have : p ≠ q := by
-      let c_fact_def := congrArg (· q) (Nat.factorization_ordCompl n p)
       by_contra h
       have : (n / p ^ n.factorization p).factorization q = (Finsupp.erase p n.factorization) p := by
-        exact h ▸ c_fact_def
+        exact h ▸ c_fact_def q
       exact c_fact_q ((Finsupp.erase_same : _ = 0) ▸ this)
     have p_le_q : p ≤ q := Nat.minFac_le_of_dvd q_prime.one_lt q_dvd_n
     exact
