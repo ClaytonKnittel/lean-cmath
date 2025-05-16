@@ -156,32 +156,21 @@ theorem ordCompl_of_non_prime_pow {n p : ℕ} (hn : 1 < n) (hp : ¬IsPrimePow n)
       rw [← Nat.div_one n, ← Nat.pow_zero p, ← Nat.factorization_eq_zero_of_not_dvd h]
     exact (this ▸ hn).ne c_eq_1.symm
 
-  have n_fact_p_ne_0 : n.factorization p ≠ 0 := by
-    by_contra eq_0
-    apply n_ne_0
-    have := (Nat.factorization_eq_zero_iff n p).mp eq_0
-    refine (this.resolve_left ?_).resolve_left ?_
-    . exact not_not_intro p_prime
-    . exact not_not_intro p_dvd_n
+  have : n.factorization p > 0 :=
+    Nat.zero_lt_of_ne_zero (dvd_n_fact_ne_zero n_ne_0 p_prime p_dvd_n)
+  refine ⟨p, _, p_prime.prime, this, ?_⟩
 
   -- Since `c = 1`, `n.factorization q` for `q ≠ p` is `= 0`.
-  have (q : ℕ): n.factorization q = Finsupp.single p (n.factorization p) q := by
-    if h : q = p then
-      rw [h, Finsupp.single_eq_same]
-    else
-      let c_fact_q := congrArg (· q) (Nat.factorization_ordCompl n p)
-      dsimp at c_fact_q
-      rw [Finsupp.erase_ne h] at c_fact_q
-      rw [← c_fact_q, Finsupp.single_eq_of_ne (Ne.symm h)]
-      exact c_fact_eq_0 q
-  -- So `n` is a prime power.
-  have n_eq_p_pow :=
-    Nat.eq_of_factorization_eq
-      n_ne_0
-      (pow_ne_zero _ p_prime.ne_zero)
-      (Nat.Prime.factorization_pow p_prime ▸ this)
-
-  exact ⟨p, _, p_prime.prime, Nat.zero_lt_of_ne_zero n_fact_p_ne_0, n_eq_p_pow.symm⟩
+  symm
+  apply Nat.eq_of_factorization_eq n_ne_0 (pow_ne_zero _ p_prime.ne_zero)
+  intro q
+  rw [Nat.Prime.factorization_pow p_prime]
+  if h : q = p then
+    rw [h, Finsupp.single_eq_same]
+  else
+    rw [Finsupp.single_eq_of_ne (Ne.symm h), ← Finsupp.erase_ne h,
+        ← Nat.factorization_ordCompl n p]
+    exact c_fact_eq_0 q
 
 /-- If `n` is not a prime power, and `p` is its minimum factor, then the second
  smallest prime factor `q` is consecutive to `p` to some power `> 0`.
